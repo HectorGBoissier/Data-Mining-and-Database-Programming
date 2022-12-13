@@ -1,0 +1,23 @@
+DROP TABLE MyEmployees;
+
+CREATE TABLE MyEmployees AS SELECT * FROM HR.Employees;
+
+CREATE OR REPLACE TRIGGER RaiseGuard 
+    BEFORE UPDATE OF SALARY ON MyEmployees 
+    FOR EACH ROW
+DECLARE
+    v_unmodified MyEmployees.SALARY%TYPE;
+BEGIN
+    IF (:new.SALARY - :old.SALARY)>400 THEN
+        v_unmodified := :new.SALARY;
+        :new.SALARY := :old.SALARY + 400 ;
+        INSERT INTO HW2Log (MESSAGE) VALUES ('Salary update for employee '||:new.EMPLOYEE_ID||' modified from '||v_unmodified||' to limit of '||:new.SALARY);
+    END IF;
+END RaiseGuard;
+
+EXEC AssignRaises(5,25000);
+
+SELECT * FROM HW2Log ORDER BY TSTAMP;
+
+SELECT EMPLOYEE_ID, SALARY FROM MyEmployees ORDER BY EMPLOYEE_ID;
+

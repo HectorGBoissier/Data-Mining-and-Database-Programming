@@ -1,0 +1,36 @@
+fuzzycars <- read.csv2("car_data.csv",stringsAsFactors = TRUE)
+
+samp_sz = .8 
+set.seed(02328826) 
+train = sample(1:nrow(fuzzycars), samp_sz * nrow(fuzzycars))
+cars.train = fuzzycars[train,] 
+cars.test = fuzzycars[-train,] 
+
+tree.cars.train = tree(acceptability ~ .,cars.train)
+tree.cars.train
+
+summary(tree.cars.train)
+
+plot(tree.cars.train)
+text(tree.cars.train, pretty=0)
+
+cars.pred = predict(tree.cars.train,cars.test,type="class")
+library(caret)
+confusionMatrix(cars.pred, cars.test$acceptability, mode = "prec_recall" )
+
+great_car = data.frame(purchase_price=factor(c("high")), maint_cost=factor(c("high")), num_doors=c(2), num_persons=c(4), trunk_size=factor(c("small")), safety_rating=factor(c("high")))
+great_car_pred = predict(tree.cars.train,great_car,type="class")
+great_car_pred
+
+library(randomForest)
+set.seed(02328826)
+rf.cars=randomForest(acceptability~.,data=cars.train,importance=TRUE)
+rf.cars
+
+rf.cars.pred=predict(rf.cars,cars.test,type="class")
+library(caret)
+confusionMatrix(rf.cars.pred, cars.test$acceptability, mode = "prec_recall")
+
+importance(rf.cars)
+
+varImpPlot(rf.cars)
