@@ -1,0 +1,72 @@
+wines <- read.csv("wine-quality.csv")
+
+summary(wines)
+
+pairs(wines)
+
+normalize <- function(x) { 
+  return((x - min(x)) / (max(x) - min(x)))
+}
+
+wines.norm <- as.data.frame(lapply(wines, normalize))
+
+train_pct <- 0.75
+set.seed(02328826)
+train <- sample(1:nrow(wines.norm),train_pct * nrow(wines.norm))
+wines.train <- wines.norm[train, ]
+wines.test <- wines.norm[-train, ]
+
+library(neuralnet)
+net <- neuralnet(quality~.,wines.train,hidden=1) 
+plot(net)
+net.results <- compute(net, wines.test[,1:11])
+predicted.quality <- net.results$net.result 
+cor(predicted.quality, wines.test$quality)
+
+net2 <- neuralnet(quality~.,wines.train,hidden=5, stepmax = 1e7) 
+plot(net2)
+net.results2 <- compute(net2, wines.test[,1:11])
+predicted.quality2 <- net.results2$net.result 
+cor(predicted.quality2, wines.test$quality)
+
+library(caret)
+my.grid <- expand.grid(.decay = c(0.1, 0.05, 0.01), .size = c(4, 8, 12))
+caret.net.fit <- train(quality~., data = wines.train,
+                       method = "nnet", maxit = 1000, tuneGrid = my.grid, 
+                       trace = FALSE)
+caret.net.fit 
+
+caret.net.predict <- predict(caret.net.fit, newdata = wines.test[,1:11])
+cor(caret.net.predict, wines.test$quality)
+
+library(tree)
+tree.fit = tree(quality~.,wines.train)
+summary(tree.fit)
+
+tree.preds = predict(tree.fit,wines.test[,1:11])
+cor(tree.preds, wines.test$quality)
+
+library(randomForest) 
+set.seed(02328826)
+rf=randomForest(quality~.,data=wines.train,importance=TRUE)
+rf
+
+rf_preds = predict(rf,wines.test[,1:11])
+cor(rf_preds, wines.test$quality)
+
+importance(rf)
+
+varImpPlot(rf)
+
+wines.train2 <- subset(wines.train, select=-c(density))
+wines.test2 <- subset(wines.test, select=-c(density))
+
+set.seed(02328826)
+rf2=randomForest(quality~.,data=wines.train2,importance=TRUE)
+rf2
+importance(rf2)
+varImpPlot(rf2)
+rf.preds2 = predict(rf2,wines.test2[,1:10])
+cor(rf.preds2, wines.test2$quality)
+
+

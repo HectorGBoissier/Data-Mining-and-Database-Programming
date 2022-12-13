@@ -1,0 +1,108 @@
+tweets_raw <- read.csv("tweets.csv",stringsAsFactors = FALSE)
+
+tweets_raw$name <- factor(tweets_raw$name)
+table(tweets_raw$name)
+
+library(tm)
+tweets_corpus <- VCorpus(VectorSource(tweets_raw$text))
+print(tweets_corpus)
+
+tweets_corpus_clean <- tm_map(tweets_corpus, content_transformer(tolower))
+tweets_corpus_clean <- tm_map(tweets_corpus_clean, removeNumbers) 
+tweets_corpus_clean <- tm_map(tweets_corpus_clean, removeWords, stopwords())
+tweets_corpus_clean <- tm_map(tweets_corpus_clean, removePunctuation)
+library(SnowballC)
+tweets_corpus_clean <- tm_map(tweets_corpus_clean, stemDocument)
+tweets_corpus_clean <- tm_map(tweets_corpus_clean, stripWhitespace) 
+
+lapply(tweets_corpus[1], as.character)
+
+lapply(tweets_corpus_clean[1], as.character) 
+
+tweets_dtm <- DocumentTermMatrix(tweets_corpus_clean)
+tweets_dtm
+
+train_pct <- .8 
+set.seed(02328826)
+train = sample(1:nrow(tweets_dtm),train_pct * nrow(tweets_dtm))
+tweets_dtm_train <- tweets_dtm[train, ]
+tweets_dtm_test  <- tweets_dtm[-train, ]
+tweets_train_labels <- tweets_raw[train, ]$name
+tweets_test_labels  <- tweets_raw[-train, ]$name
+
+prop.table(table(tweets_train_labels))
+
+prop.table(table(tweets_test_labels)) 
+
+tweets_freq_words <- findFreqTerms(tweets_dtm_train, 5)
+
+tweets_dtm_freq_train <- tweets_dtm_train[ , tweets_freq_words]
+tweets_dtm_freq_test <- tweets_dtm_test[ , tweets_freq_words]
+inspect(tweets_dtm_freq_train)
+
+convert_counts <- function(x) {
+  return(ifelse(x > 0, "Yes", "No"))
+}
+
+tweets_train <- apply(tweets_dtm_freq_train, MARGIN = 2, convert_counts)
+tweets_test  <- apply(tweets_dtm_freq_test, MARGIN = 2, convert_counts)
+
+library(e1071)
+tweets_classifier <- naiveBayes(tweets_train, tweets_train_labels)
+
+tweets_test_pred <- predict(tweets_classifier, tweets_test)
+library(caret)
+confusionMatrix(tweets_test_pred,tweets_test_labels,positive = "Barry", 
+                mode = "prec_recall")
+
+library(wordcloud)
+Barry <- subset(tweets_raw, name == "Barry")
+Don  <- subset(tweets_raw, name == "Don")
+Hillary  <- subset(tweets_raw, name == "Hillary")
+
+wordcloud(Barry$text, max.words = 20, scale = c(3, 0.5))
+
+wordcloud(Don$text, max.words = 20, scale = c(3, 0.5))
+
+wordcloud(Hillary$text, max.words = 20, scale = c(3, 0.5))
+
+tweets_corpus_clean <- tm_map(tweets_corpus, content_transformer(tolower))
+tweets_corpus_clean <- tm_map(tweets_corpus_clean, removeNumbers) 
+tweets_corpus_clean <- tm_map(tweets_corpus_clean, removeWords, stopwords())
+tweets_corpus_clean <- tm_map(tweets_corpus_clean, removePunctuation)
+tweets_corpus_clean <- tm_map(tweets_corpus_clean, stemDocument)
+tweets_corpus_clean <- tm_map(tweets_corpus_clean, removeWords, "president")
+tweets_corpus_clean <- tm_map(tweets_corpus_clean, removeWords,"will")
+tweets_corpus_clean <- tm_map(tweets_corpus_clean, removeWords,"now")
+tweets_corpus_clean <- tm_map(tweets_corpus_clean, removeWords,"get")
+tweets_corpus_clean <- tm_map(tweets_corpus_clean, stripWhitespace) 
+
+tweets_dtm <- DocumentTermMatrix(tweets_corpus_clean)
+tweets_dtm
+
+set.seed(02328826)
+train = sample(1:nrow(tweets_dtm),train_pct * nrow(tweets_dtm))
+tweets_dtm_train <- tweets_dtm[train, ]
+tweets_dtm_test  <- tweets_dtm[-train, ]
+
+findFreqTerms(tweets_dtm_train, 5)
+tweets_freq_words <- findFreqTerms(tweets_dtm_train, 5)
+
+tweets_dtm_freq_train <- tweets_dtm_train[ , tweets_freq_words]
+tweets_dtm_freq_test <- tweets_dtm_test[ , tweets_freq_words]
+inspect(tweets_dtm_freq_train)
+
+convert_counts <- function(x) {
+  return(ifelse(x > 0, "Yes", "No"))
+}
+
+tweets_train <- apply(tweets_dtm_freq_train, MARGIN = 2, convert_counts)
+tweets_test  <- apply(tweets_dtm_freq_test, MARGIN = 2, convert_counts)
+
+tweets_classifier <- naiveBayes(tweets_train, tweets_train_labels)
+
+tweets_test_pred <- predict(tweets_classifier, tweets_test)
+confusionMatrix(tweets_test_pred,tweets_test_labels, 
+                mode = "prec_recall")
+
+

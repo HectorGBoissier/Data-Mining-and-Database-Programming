@@ -1,0 +1,50 @@
+students <- read.csv("student_alcohol.csv", stringsAsFactors = TRUE)
+
+str(students)
+
+students$Walc = ifelse(students$Walc>=4,
+                       "Heavy drinker","Responsible student")
+
+students$Walc <- factor(students$Walc)
+
+student.type <- students$Walc
+prop.table(table(student.type))
+
+samp_sz = .8 
+set.seed(02328826) 
+train = sample(1:nrow(students), samp_sz * nrow(students))
+students.train = students[train,] 
+students.test = students[-train,]
+
+student.type.train <- students[train, ]$Walc
+student.type.test <- students[-train, ]$Walc
+prop.table(table(student.type.train))
+
+prop.table(table(student.type.test))
+
+library(tree)
+tree.students.train = tree(Walc ~ .,students.train) 
+summary(tree.students.train)
+
+students.pred = predict(tree.students.train,students.test,type="class")
+library(caret)
+confusionMatrix(students.pred, students.test$Walc, mode = "prec_recall" )
+
+View(students)
+
+students.train <- subset(students.train,select=-c(studentid))
+students.test <- subset(students.test,select=-c(studentid))
+
+tree.students.train = tree(Walc ~ .,students.train)
+students.pred = predict(tree.students.train,students.test,type="class")
+confusionMatrix(students.pred, students.test$Walc, mode = "prec_recall" )
+
+library(randomForest)
+set.seed(02328826)
+rf.students=randomForest(Walc~.,data=students.train,importance=TRUE)
+rf.students
+
+rf.students.pred=predict(rf.students,students.test,type="class")
+confusionMatrix(rf.students.pred, students.test$Walc, mode = "prec_recall")
+
+
