@@ -1,0 +1,61 @@
+DROP TABLE MyEmployees;
+
+CREATE TABLE MyEmployees AS SELECT * FROM HR.Employees;
+
+TRUNCATE TABLE HW1Log;
+
+CREATE OR REPLACE PROCEDURE AssignRaises(
+    p_raise INTEGER,
+    p_budget INTEGER
+)AS
+    v_count1 INTEGER := 0;
+    v_count2 INTEGER := 0;
+    v_raise MyEmployees.SALARY%TYPE;
+    v_budget MyEmployees.SALARY%TYPE;
+    CURSOR c_employee IS
+        SELECT * FROM MyEmployees ORDER BY SALARY
+        FOR UPDATE; 
+BEGIN
+    v_budget := p_budget;
+    FOR v_employee IN c_employee 
+    LOOP
+        v_raise := v_employee.SALARY * p_raise / 100;
+        IF (v_budget - v_raise) >= 0 THEN
+            UPDATE MyEmployees 
+                SET SALARY = SALARY + v_raise
+                WHERE CURRENT OF c_employee;
+            v_budget := v_budget - v_raise; 
+            v_count1 := v_count1 + 1; 
+        ELSE 
+            INSERT INTO HW1Log (Message) VALUES ('Not enough money left to give a raise to employee '||v_employee.EMPLOYEE_ID);
+            v_count2 := v_count2 + 1; 
+        END IF;
+    END LOOP;
+    
+    DBMS_OUTPUT.PUT_LINE('Number of employees who received raises: '||v_count1);
+    DBMS_OUTPUT.PUT_LINE('Number of employees who did not receive raises: '||v_count2);
+    DBMS_OUTPUT.PUT_LINE('Amount of money left unused in the raise budget: '||v_budget);
+    
+    COMMIT;
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE(SQLERRM);
+END AssignRaises;
+
+EXEC AssignRaises(5,25000);
+
+SELECT * FROM HW1Log ORDER BY TStamp;
+
+SELECT EMPLOYEE_ID, SALARY FROM MyEmployees ORDER BY EMPLOYEE_ID;
+
+DROP TABLE MyEmployees;
+
+CREATE TABLE MyEmployees AS SELECT * FROM HR.Employees;
+
+TRUNCATE TABLE HW1Log;
+
+EXEC AssignRaises(4,26000);
+
+SELECT * FROM HW1Log ORDER BY TStamp;
+
+SELECT EMPLOYEE_ID, SALARY FROM MyEmployees ORDER BY EMPLOYEE_ID;

@@ -1,0 +1,43 @@
+CREATE TABLE MyEmployees AS SELECT * FROM HR.Employees;
+
+CREATE TABLE HW1Log
+(
+	Message VARCHAR2(200),
+	TStamp TIMESTAMP DEFAULT SYSTIMESTAMP
+);
+
+CREATE OR REPLACE PROCEDURE RaiseSalary(
+    p_id MyEmployees.EMPLOYEE_ID%TYPE,
+    p_raise INTEGER
+)AS
+    v_salary MyEmployees.SALARY%TYPE;
+BEGIN
+    SELECT SALARY INTO v_salary
+    FROM MyEmployees WHERE EMPLOYEE_ID = p_id;
+    
+    UPDATE MyEmployees 
+        SET SALARY = v_salary + (v_salary * p_raise / 100)
+        WHERE EMPLOYEE_ID = p_id;
+    
+    INSERT INTO HW1Log (Message) VALUES ('Employee '||p_id||' was raised by '||p_raise||' percent.');
+    COMMIT;
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE(SQLERRM||' Encountered while trying to give employee '||p_id||' a raise.');
+END RaiseSalary;
+
+SELECT SALARY FROM MyEmployees WHERE EMPLOYEE_ID = 179;
+
+EXEC RaiseSalary(179,10);
+
+SELECT SALARY FROM MyEmployees WHERE EMPLOYEE_ID = 179;
+
+SELECT SALARY FROM MyEmployees WHERE EMPLOYEE_ID = 202;
+
+EXEC RaiseSalary(202,15);
+
+SELECT SALARY FROM MyEmployees WHERE EMPLOYEE_ID = 202;
+
+EXEC RaiseSalary(500,20);
+
+SELECT * FROM HW1Log ORDER BY TStamp;

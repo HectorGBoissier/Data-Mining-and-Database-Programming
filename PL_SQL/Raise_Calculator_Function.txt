@@ -1,0 +1,24 @@
+DROP TABLE MyEmployees;
+
+CREATE TABLE MyEmployees AS SELECT * FROM HR.Employees;
+
+CREATE OR REPLACE FUNCTION
+    RaiseCalculator (p_salary IN MyEmployees.SALARY%TYPE) RETURN MyEmployees.SALARY%TYPE
+    AS
+        avg_salary MyEmployees.SALARY%TYPE;
+        v_salary MyEmployees.SALARY%TYPE;
+    BEGIN
+        SELECT AVG (SALARY) INTO avg_salary 
+        FROM MyEmployees;
+        
+        IF (avg_salary >= p_salary) THEN
+            v_salary := p_salary * 1.05;
+        ELSE
+            v_salary := p_salary * 1.03;
+        END IF;
+        
+        Return v_salary;
+END RaiseCalculator;
+
+SELECT employee_id, salary, RaiseCalculator(salary) AS raised_salary
+FROM myemployees ORDER BY salary;
